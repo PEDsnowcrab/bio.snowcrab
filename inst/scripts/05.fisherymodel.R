@@ -69,6 +69,7 @@ figure.mcmc( type="timeseries", vname="fishingmortality", res=res, fn=file.path(
 
 #Summary table of mean values for inclusion in document
 biomass.summary.table(x)
+F.summary.table(x)
 
 # Harvest control rules
 figure.mcmc( type="hcr", vname="default", res=res, fn=file.path(p$fishery_model$outdir, "hcr.default.png" ), save.plot=T  )

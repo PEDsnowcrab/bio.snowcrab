@@ -18,7 +18,7 @@
 
 # -------------------------------------------------
 # Part 1 -- construct basic parameter list defining the main characteristics of the study
-# require(aegis)
+require(aegis)
 
  p = bio.snowcrab::snowcrab_carstm( DS="parameters", assessment.years=1999:year.assessment )
 
@@ -26,8 +26,8 @@
   p$inla_num.threads = 6
   p$inla_blas.num.threads = 6
 
-plot.dir=paste(p$modeldir,"prediction.plots", year.assessment, sep="/" )
-
+  plot.dir=file.path(p$modeldir,"prediction.plots", year.assessment)
+  dir.create(plot.dir)
 # ------------------------------------------------
 # Part 2 -- polygon structure
   sppoly = areal_units( p=p )  # to reload
@@ -61,22 +61,18 @@ plot.dir=paste(p$modeldir,"prediction.plots", year.assessment, sep="/" )
     fit = carstm_model( p=pB, DS="carstm_modelled_fit", carstm_model_label="production" )  # extract currently saved model fit
     # maps of some of the results
     vn = paste(pB$variabletomodel, "predicted", sep=".")
-    zplot=carstm_plot( p=pB, res=res, vn=vn )
+    zplot=sc_carstm_plot( p=pB, res=res, vn=vn )
    
-     #to save map of predicted
-    {
-    fn=paste("z.predicted", year.assesment,"pdf", sep="." )
-    pdf(zplot, file=paste(plot.dir, fn, sep="/"))
-  }
-
+    #to save map of predicted mean
+    
     vn = paste(pB$variabletomodel, "predicted_se", sep=".")
-    zplot=carstm_plot( p=pB, res=res, vn=vn )
+    zplot=sc_carstm_plot( p=pB, res=res, vn=vn )
     
     vn = paste(pB$variabletomodel, "random_auid_nonspatial", sep=".")
-    carstm_plot( p=pB, res=res, vn=vn )
+    sc_carstm_plot( p=pB, res=res, vn=vn )
 
     vn = paste(pB$variabletomodel, "random_auid_spatial", sep=".")
-    carstm_plot( p=pB, res=res, vn=vn )
+    sc_carstm_plot( p=pB, res=res, vn=vn )
 
     plot(fit, plot.prior=TRUE, plot.hyperparameters=TRUE, plot.fixed.effects=FALSE, single=TRUE )
 
@@ -153,20 +149,24 @@ plot.dir=paste(p$modeldir,"prediction.plots", year.assessment, sep="/" )
 
 # Marginal log-Likelihood:  -17603.13
 
-    
-    
-    
     vn = paste(pS$variabletomodel, "predicted", sep=".")
-    carstm_plot( p=pS, res=res, vn=vn ) # maps of some of the results
-
+    ssplot=sc_carstm_plot( p=pS, res=res, vn=vn, main="Substrate Grain Size" ) # maps of some of the results
+    ssplot
+    
+    #to save map of predicted mean
+    fn=paste("substrate.predicted", year.assessment,"pdf", sep="." )
+    pdf(file=paste(plot.dir, fn, sep="/"))
+    ssplot
+    dev.off()
+    
     vn = paste(pS$variabletomodel, "predicted_se", sep=".")
-    carstm_plot( p=pS, res=res, vn=vn )
+    sc_carstm_plot( p=pS, res=res, vn=vn )
 
     vn = paste(pS$variabletomodel, "random_auid_nonspatial", sep=".")
-    carstm_plot( p=pS, res=res, vn=vn )
+    sc_carstm_plot( p=pS, res=res, vn=vn )
 
     vn = paste(pS$variabletomodel, "random_auid_spatial", sep=".")
-    carstm_plot( p=pS, res=res, vn=vn )
+    sc_carstm_plot( p=pS, res=res, vn=vn )
 
 
 
@@ -276,15 +276,17 @@ plot.dir=paste(p$modeldir,"prediction.plots", year.assessment, sep="/" )
 
      
      vn = paste(pT$variabletomodel, "predicted", sep=".")
-     carstm_plot( p=pT, res=res, vn=vn, time_match=list(year="2000", dyear="0.85" ) )       # maps of some of the results
-  
+     
+     sc_carstm_plot( p=pT, res=res, vn=vn, time_match=list(year="2000", dyear="0.85", main="Temperature" ) )       # maps of some of the results
+    
      vn = paste(pT$variabletomodel, "predicted_se", sep=".")
-     carstm_plot( p=pT, res=res, vn=vn, time_match=list(year="2000", dyear="0.85" ) )       # maps of some of the results
+     sc_carstm_plot( p=pT, res=res, vn=vn, time_match=list(year="2000", dyear="0.85" ) )       # maps of some of the results
   
      vn = paste(pT$variabletomodel, "random_auid_nonspatial", sep=".")
-     carstm_plot( p=pT, res=res, vn=vn, time_match=list(year="2000"  ) )       # maps of some of the results
+     sc_carstm_plot( p=pT, res=res, vn=vn, time_match=list(year="2000"  ) )       # maps of some of the results
+     
      vn = paste(pT$variabletomodel, "random_auid_spatial", sep=".")
-     carstm_plot( p=pT, res=res, vn=vn, time_match=list(year="2000"  ) )       # maps of some of the results
+     sc_carstm_plot( p=pT, res=res, vn=vn, time_match=list(year="2000"  ) )       # maps of some of the results
   
   
   
@@ -301,7 +303,7 @@ plot.dir=paste(p$modeldir,"prediction.plots", year.assessment, sep="/" )
   for (x in recent){
     fn=paste(x,"t",  "pdf", sep=".")
     outfile=paste(plot.dir, fn, sep="/")
-    each.plot=   carstm_plot( p=pT, res=res, vn=vn, time_match=list(year=x, dyear="0.85" ) )
+    each.plot=   sc_carstm_plot( p=pT, res=res, vn=vn, time_match=list(year=x, dyear="0.85" ), main= )
     pdf(outfile)
     print(each.plot)
     dev.off()
@@ -329,14 +331,16 @@ plot.dir=paste(p$modeldir,"prediction.plots", year.assessment, sep="/" )
     plot( fit, plot.prior=TRUE, plot.hyperparameters=TRUE, plot.fixed.effects=FALSE )
 
     vn = paste(pPC1$variabletomodel, "predicted", sep=".")
-    carstm_plot( p=pPC1, res=res, vn=vn, time_match=list(year="2017" ), dyear="0.85" ) # maps of some of the results
+    sc_carstm_plot( p=pPC1, res=res, vn=vn, time_match=list(year="2017" ), dyear="0.85" ) # maps of some of the results
+    
     vn = paste(pPC1$variabletomodel, "predicted_se", sep=".")
-    carstm_plot( p=pPC1, res=res, vn=vn, time_match=list(year="2017" ), dyear="0.85" ) # maps of some of the results
+    sc_carstm_plot( p=pPC1, res=res, vn=vn, time_match=list(year="2017" ), dyear="0.85" ) # maps of some of the results
 
     vn = paste(pPC1$variabletomodel, "random_auid_nonspatial", sep=".")
-    carstm_plot( p=pPC1, res=res, vn=vn, time_match=list(year="2017" ), dyear="0.85" )       # maps of some of the results , dyear="0.85"
+    sc_carstm_plot( p=pPC1, res=res, vn=vn, time_match=list(year="2017" ), dyear="0.85" )       # maps of some of the results , dyear="0.85"
+    
     vn = paste(pPC1$variabletomodel, "random_auid_spatial", sep=".")
-    carstm_plot( p=pPC1, res=res, vn=vn, time_match=list(year="2017" ), dyear="0.85" )       # maps of some of the results , dyear="0.85"
+    sc_carstm_plot( p=pPC1, res=res, vn=vn, time_match=list(year="2017" ), dyear="0.85" )       # maps of some of the results , dyear="0.85"
 
     
 #From Framework Run(up to 2018)
@@ -408,12 +412,14 @@ plot.dir=paste(p$modeldir,"prediction.plots", year.assessment, sep="/" )
     plot( fit, plot.prior=TRUE, plot.hyperparameters=TRUE, plot.fixed.effects=FALSE )
 
     vn = paste(pPC2$variabletomodel, "predicted", sep=".")
-    carstm_plot( p=pPC2, res=res, vn=vn, time_match=list(year="2017" ), dyear="0.85" )       # maps of some of the results
+    sc_carstm_plot( p=pPC2, res=res, vn=vn, time_match=list(year="2017" ), dyear="0.85" )       # maps of some of the results
+    
     vn = paste(pPC2$variabletomodel, "predicted_se", sep=".")
-    carstm_plot( p=pPC2, res=res, vn=vn, time_match=list(year="2017" ), dyear="0.85" ) # maps of some of the results
+    sc_carstm_plot( p=pPC2, res=res, vn=vn, time_match=list(year="2017" ), dyear="0.85" ) # maps of some of the results
 
     vn = paste(pPC2$variabletomodel, "random_auid_nonspatial", sep=".")
-    carstm_plot( p=pPC2, res=res, vn=vn, time_match=list(year="2017" ), dyear="0.85" )       # maps of some of the results , dyear="0.85"
+    sc_carstm_plot( p=pPC2, res=res, vn=vn, time_match=list(year="2017" ), dyear="0.85" )       # maps of some of the results , dyear="0.85"
+    
     vn = paste(pPC2$variabletomodel, "random_auid_spatial", sep=".")
     carstm_plot( p=pPC2, res=res, vn=vn, time_match=list(year="2017" ), dyear="0.85" )       # maps of some of the results , dyear="0.85"
 
@@ -575,7 +581,7 @@ plot.dir=paste(p$modeldir,"prediction.plots", year.assessment, sep="/" )
       if (res_dim == 1 ) time_match = NULL
       if (res_dim == 2 ) time_match = list(year="2000")
       if (res_dim == 3 ) time_match = list(year="2000", dyear="0.85" )
-      carstm_plot( p=p, res=res, vn=vn, time_match=time_match )
+      sc_carstm_plot( p=p, res=res, vn=vn, time_match=time_match )
     }
 
 

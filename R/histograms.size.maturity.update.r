@@ -1,5 +1,5 @@
 
-  histograms.size.maturity.update = function( outdir, redo.data=F ) {
+histograms.size.maturity.update = function( outdir, redo.data=F, labels=T ) {
     # size frequency distributions of snow crab, broken down by maturity
 
       loc = file.path(project.datadirectory("bio.snowcrab"), "output", "size.data")
@@ -109,23 +109,28 @@
             abline( v=41, lwd=1, lty="longdash" )
           }
           
-          if (areas[a]==areas[3] & year[y]==year[1] ) {
+          if (labels) {
+            if (areas[a]==areas[3] & year[y]==year[1]) {
             xl = c(xlim[2]*0.1, xlim[2]*0.1)
             yl = c(ylim[2]*0.8, ylim[2]*0.6 )
             points( x=xl, y=yl, pch=22, bg=c(cols[2], cols[1]), cex=2 )
             text( x=xl+xlim[2]*0.02, y=yl-ylim[2]*0.05, c("Immature", "Mature"), cex=1, pos=4)
-          }
+          }}
 
         }
      }
 
      mtext("Carapace width (mm)", side=1, outer=T, line=2.5, cex=0.75)
-     mtext(expression(paste("No. / ", km^2)), side=2.5, outer=T, line=3, cex=0.75)
+     mtext(expression(paste("No. / ", km^2)), side=2.5, outer=T, line=3, cex=0.65)
      mtext("N-ENS", side=3, outer=T, line=1, at=0.15, cex=0.75)
      mtext("S-ENS", side=3, outer=T, line=1, at=0.5, cex=0.75)
      mtext("4X", side=3, outer=T, line=1, at=0.85, cex=0.75)
-     mtext("MALE", side=3, outer=T, line=3, cex=0.75)
+     #mtext("MALE", side=3, outer=T, line=3, cex=0.75)
 
+     if (labels){
+       mtext("MALE", side=3, outer=T, line=3, cex=0.75)
+     }
+     
   dev.off()
   #cmd( "convert   -trim -quality 9  -geometry 200% -frame 2% -mattecolor white -antialias ", paste(fn, "pdf", sep="."),  paste(fn, "png", sep=".") )
   
@@ -179,21 +184,26 @@
 
           if (areas[a]==areas[ncols]) text( dim(toplot)[2]-4, ylim[2]*2/3, year[y], cex=1.2 )
 
-          if (areas[a]==areas[3] & year[y]==year[1] ) {
+          if (labels) {
+            if (areas[a]==areas[3] & year[y]==year[1] ) {
             xl = c(xlim[2]*0.18, xlim[2]*0.18)
             yl = c(ylim[2]*0.8, ylim[2]*0.6 )
             points( x=xl, y=yl, pch=22, bg=c(cols[2], cols[1]), cex=2 )
             text( x=xl+xlim[2]*0.01, y=yl-ylim[2]*0.05, c("Immature", "Mature"), cex=1, pos=4)
-          }
+          }}
 
      }}
 
       mtext("Carapace width (mm)", side=1, outer=T, line=2.5, cex=0.75)
-      mtext(expression(paste("No. / ", km^2)), side=2, outer=T, line=3, cex=0.75)
+      mtext(expression(paste("No. / ", km^2)), side=2, outer=T, line=3, cex=0.65)
       mtext("N-ENS", side=3, outer=T, line=1, at=0.15, cex=0.75)
       mtext("S-ENS", side=3, outer=T, line=1, at=0.5, cex=0.75)
       mtext("4X",   side=3, outer=T, line=1, at=0.85, cex=0.75)
-      mtext("FEMALE", side=3, outer=T, line=3, cex=0.75)
+      #mtext("FEMALE", side=3, outer=T, line=3, cex=0.75)
+      
+      if (labels) {
+        mtext("FEMALE", side=3, outer=T, line=3, cex=0.75)
+      }
       
     dev.off()
  #cmd( "convert   -trim -quality 9  -geometry 200% -frame 2% -mattecolor white -antialias ", paste(fn, "pdf", sep="."),  paste(fn, "png", sep=".") )
