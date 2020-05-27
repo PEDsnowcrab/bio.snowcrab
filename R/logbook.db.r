@@ -238,8 +238,8 @@
       to.offset = intersect( i.cfa4x, i.offset)
 
       x$yr = x$year
-      x$yr[to.offset] = x$yr[to.offset] - 1
-      # x$yr[i.cfa4x] = x$yr[i.cfa4x] + 1  # ie:: fishery from 1999-2000 in 4X is now coded as 2000
+      x$yr[to.offset] = x$yr[to.offset] - 1 # ie:: fishery from 2017-2018 in 4X is now coded as 2017
+  
 
       a= x[which(x$cfa0=='cfa4x'),]
       head(a)

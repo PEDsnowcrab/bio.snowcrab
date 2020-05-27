@@ -4,7 +4,7 @@ map.fisheries.data = function(p, outdir,  FUN, yrs, variable='effort',probs=c(0,
 
   x = x [polygon_inside( x, region="isobath1000m"),]
   x = x[ which(x$effort <= 300) ,]
-  x = x[ which(x$cpue < 500),]
+  x = x[ which(x$cpue < 600),]
   x$year=x$yr #this creates proper offset for 4X, 2017-18 season =2017
   x = lonlat2planar( x,  proj.type=p$aegis_proj4string_planar_km )
   x = subset(x,select=c('year','plon','plat',variable))
