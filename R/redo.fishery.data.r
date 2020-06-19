@@ -5,8 +5,8 @@ redo.fishery.data= function(x, yrs=p$year.assessment){
   logbook.db(  DS="rawdata.areas.redo" ) # datadirectory ("bio.snowcrab"), "data", "observer", "datadump"
   observer.db( DS="rawdata.redo", yrs=yrs )
   
-  print("Data refreshed from databases, creating datafiles")
-  print("Takes up to 3 minutes")
+  print("Data refreshed from databases for years above")
+  print("Creating datafiles: takes up to 3 minutes")
 
   require(aegis.bathymetry)
  

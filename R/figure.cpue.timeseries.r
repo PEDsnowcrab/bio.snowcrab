@@ -4,7 +4,7 @@
     k = NULL
     for (r in regions) {
       res = get.fishery.stats.by.region(Reg=r)
-      if(r=='cfanorth') {ii=which(res$yr==2014); res[ii,'cpue'] <- 104.5; ii=which(res$yr==2013); res[ii,'cpue'] <- 106}
+      #if(r=='cfanorth') {ii=which(res$yr==2014); res[ii,'cpue'] <- 104.5; ii=which(res$yr==2013); res[ii,'cpue'] <- 106}
       k = cbind( k, res$cpue )
     }
     
