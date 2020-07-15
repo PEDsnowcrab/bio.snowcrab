@@ -395,7 +395,8 @@ snowcrab.db = function( DS, p=NULL, yrs=NULL) {
     write.csv(errors.yearly, file=outfile.e)
     print("Current Year Morphology Errors saved to file")
     print(outfile.e)
-}
+    }
+    
 
     write.csv(errors, file=outfile.e2)
     print("All Years Morphology Errors saved to file")

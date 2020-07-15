@@ -1,3 +1,13 @@
+#BZ July 2020- Work in progress
+#Began to investigate potential alternate approaches to Harvest Control Rules / ref point
+#using catch rates and potentially incorporating temperature
+#explored using carstm temps and the bnam data series from BIO Oceanographers, likely bnam
+#grids landings / catch rates & determines associated bottom temps for thos grids
+#an example of simplistic (not using temp) catch rate reference points are provided at end of script
+#Still requires investigation into how use of temp might better inform the ref points
+#by accounting for temp effect, a clearer picture of catch rate may be possible for ref points
+
+
 # -------------------------------------------------
 # Part 1 -- import temperature grids from carstm
 
@@ -14,6 +24,8 @@ if (!exists("year.assessment")) {
 }
 
 #Choose one
+#NB. The carstm temp approach is not fully functional. Left here in case to allow for future work if needed.
+#BNAM yields higher spatial and temporal density data
 #temp.model="carstm"
 temp.model="bnam" 
 
@@ -83,9 +95,15 @@ yearly=aggregate(cbind(landings, effort)~licence + year, data=x, FUN="sum")
     yearly$cpue=yearly$landings/yearly$effort
     yearly= yearly[with(yearly, order(licence, year)),]
 
+yearly.agg=aggregate(cpue~year, data=yearly, FUN="median")
+
 year.tot=aggregate(landings~year, data=xraw, FUN="sum")
     year.tot= year.tot[with(year.tot, order(year)),]
+year.tot=merge(year.tot, yearly.agg)
 
+save(xraw, file=paste(outfile, "logs.rdata", sep="/") )
+save(yearly, file=paste(outfile, "annual.by.license.rdata", sep="/") )
+save(year.tot, file=paste(outfile, "annual.landings.rdata", sep="/") )
 
 # can be moved to bio.snowcrab/ r in time
 # left here for now to allow tweaking
@@ -268,247 +286,56 @@ for(i in 1:length(u)){
 }		
 
 #average all temps grids by month
-temps=do.call(rbind,outbnam)
-temps= apply(temps,2,mean)
+raw.temps=do.call(rbind,outbnam)
+raw.temps= apply(raw.temps,2,mean)
 
 #to plot temp time trends (with Loess smooth)
-op = stl(ts(temps,frequency=12),s.window=7)
+op = stl(ts(raw.temps,frequency=12, start=c(1990,1)),s.window=7)
 plot(op)
 
 
-annual.smooth.temps= op$time.series[,2] #trend
-seasonality.smooth.temps= op$time.series[,1] #seasonal
-		
+temps= op$time.series[,2] #trend
+#seasonality.temps= op$time.series[,1] #seasonal
 
-write.csv(annual.smooth.temps,file=paste(outfile, '/bnam.climatology.csv', sep=''))
-out = read.csv(file=paste(outfile, '/bnam.climatology.csv', sep=''))
-
-  
-write.csv(seasonality.smooth.temps,file=paste(outfile, '/bnam.seasonality.csv', sep=''))
-out1 = read.csv(file=paste(outfile, '/bnam.seasonality.csv', sep=''))
+Month=factor(cycle(temps), levels = 1:12, labels = month.abb)		
+temps=tapply(temps, list(year = floor(time(temps)), month = Month), c)
 
 
+write.csv(temps,file=paste(outfile, '/bnam.climatology.csv', sep=''))
 
 
+#write.csv(seasonality.smooth.temps,file=paste(outfile, '/bnam.seasonality.csv', sep=''))
 
+#Merge fisheries data with temp data
+yrs=as.character(year.tot$year)
+cnames=levels(unique(Month))
+year.tot[ , cnames]=NA
+
+ti=data.frame()
+
+for (y in yrs){
+  t=ti
+  ti=year.tot[year.tot$year==y,]
+  for (m in levels(unique(Month))) {
+    ti[,m]=temps[y,m]
+      }
+ti=rbind(t, ti)
+all=ti
+ }
+
+#Object "all" now contains median landings and median catch rates by year with a mean bottom temp for each month imported from bnam
 # -------------------------------------------------
 # Part 5 -- model with catch rates with temperature
-  
-  logsInSeason<-lobster.db('process.logs.redo')
-  logsInSeason<-lobster.db('process.logs')
-  
-  write.csv(logsInSeason,file.path(project.datadirectory("bio.lobster"),'data',"Logs.csv"),row.names=F)
-  
-  cpueLFA.dat = CPUEplot(logsInSeason,lfa= p$lfas,yrs=2002:2019,graphic='R',export=F)
-  cpueLFA.dat = CPUEplot(logsInSeason,lfa= p$lfas,yrs=2006:2019,graphic='pdf',path=figdir)
-  cpueSubArea.dat = CPUEplot(logsInSeason,subarea= p$subareas,yrs=2006:2019,graphic='R')
-  
-  
-  
-  ## Commercial CPUE MOdels
-  mf1 = formula(logWEIGHT ~ fYEAR + DOS + TEMP + DOS * TEMP)
-  mf2 = formula(logWEIGHT ~ fYEAR + DOS + TEMP)
-  mf3 = formula(logWEIGHT ~ fYEAR + DOS)
-  mf4 = formula(logWEIGHT ~ fYEAR + TEMP)
-  #mf5 = formula(logWEIGHT ~ fYEAR + DOS + TEMP + (1 | fYEAR/fAREA)) # combined
-  
-  
-  TempModelling = TempModel( annual.by.area=F)
-  #CPUE.data<-CPUEModelData(p,redo=T,TempModelling)
-  CPUE.data<- CPUEModelData(p,redo=F)
-  CPUE.data=subset(CPUE.data,!(LFA==35&SYEAR<2006)) #exclude partial year of data in 35
-  CPUE.data=subset(CPUE.data,!(LFA==36&SYEAR<2005)) #exclude partial year of data in 36
-  
-  #Modelled Temperature at first day of season
-  pL=0
-  t=c()
-  d=c()
-  k=1
-  for(i in 1:length(p$lfas)){
-    for(j in 2:length(p$yrs)){
-      Cdat=subset(CPUE.data,LFA==p$lfas[i]&SYEAR==p$yrs[j])
-      Cdat=Cdat[order(Cdat$DATE_FISHED),]
-      Cdat$pLanded = cumsum(Cdat$WEIGHT_KG)/sum(Cdat$WEIGHT_KG)
-      if(nrow(Cdat)>1){
-        x=abs(Cdat$pLanded-pL)
-        d[k]=Cdat$DOS[which(x==min(x))]
-        t[k]=Cdat$TEMP[which(x==min(x))]
-        names(d)[k]=paste(p$lfas[i],p$yrs[j],sep='.')
-        names(t)[k]=paste(p$lfas[i],p$yrs[j],sep='.')
-        k=k+1
-      }
-    }
-  }
-  
-  ##t and d Overwrite with summary
-  t=with(subset(CPUE.data,DOS==1),tapply(TEMP,LFA,mean))
-  d=1
-  
-  aicc = function(aa = model.output) {
-    k = 	attr(logLik(aa),'df')
-    logLiks = logLik(aa)[1]
-    n = nobs(aa)
-    aaa = 2*nParams-2*logLiks
-    aaa + (2*k^2+2*k) / (n-k-1)
-  }
-  
-  
-  pData=list()
-  
-  CPUEModelResults1 = list()
-  CPUEModelResults2 = list()
-  CPUEModelResults3 = list()
-  CPUEModelResults4 = list()
-  AICs1 = c()
-  AICs2 = c()
-  AICs3 = c()
-  AICs4 = c()
-  for(i in 1:length( p$lfas)){
-    
-    mdata = subset(CPUE.data,LFA==p$lfas[i]&SYEAR%in%p$yrs)
-    CPUEModelResults1[[i]] = CPUEmodel(mf1,mdata,t=t[i],d=d)
-    CPUEModelResults2[[i]] = CPUEmodel(mf2,mdata,t=t[i],d=d)
-    CPUEModelResults3[[i]] = CPUEmodel(mf3,mdata,t=t[i],d=d)
-    CPUEModelResults4[[i]] = CPUEmodel(mf4,mdata,t=t[i],d=d)
-    AICs1[i] = aicc(CPUEModelResults1[[i]]$model)
-    AICs2[i] = aicc(CPUEModelResults2[[i]]$model)
-    AICs3[i] = aicc(CPUEModelResults3[[i]]$model)
-    AICs4[i] = aicc(CPUEModelResults4[[i]]$model)
-    
-    
-  }
-  names(CPUEModelResults1) = p$lfas
-  names(CPUEModelResults2) = p$lfas
-  names(CPUEModelResults3) = p$lfas
-  names(CPUEModelResults4) = p$lfas
-  
-  AICs = data.frame(rbind(AICs1,AICs2,AICs3,AICs4))
-  names(AICs) = p$lfas
-  AICs
-  AICtable=sweep(AICs,2,FUN='-',apply(AICs,2,min))
-  
-  pData=list()
-  for(i in 1:length( p$lfas)){
-    pData[[i]]=CPUEModelResults1[[i]]$pData
-    pData[[i]]$LFA=p$lfas[i]
-  }
-  
-  CPUEindex=do.call("rbind",pData)
-  
-  
-  write.csv(AICtable,file.path( figdir,"CPUEmodelAIC.csv"),row.names=F)
-  write.csv(CPUEindex,file.path( figdir,"CPUEmodelindex.csv"),row.names=F)
-  
-  
-  
-  #CPUECombinedModelResults = CPUEmodel(mf5,CPUE.data,combined=T)	
-  
-  cpue1= CPUEModelPlot(CPUEModelResults1,TempModelling,lfa = p$lfas,xlim=c(1989,2018.4),ylim=c(0,10.5),graphic='R',path=figdir,lab=1,wd=11,ht=8)
-  
-  
-  ty=sapply(1:length(p$lfas),function(x){with(subset(CPUE.data,DOS==1&LFA==p$lfas[x]),tapply(TEMP,SYEAR,mean))})
-  fs=lobster.db('season.dates')
-  d=merge(data.frame(LFA=rep(p$lfas,lapply(ty,length)),SYEAR=names(unlist(ty)),TEMP2=unlist(ty)),fs[,c('LFA','SYEAR','START_DATE')])
-  names(d)[2]="YEAR"
-  
-  
-  CPUEindex = merge(d,CPUEindex)
-  
-  m2=subset(cpue1,DOS==1,c("LFA","YEAR","mu"))
-  names(m2)[3]="mu2"
-  
-  CPUEindex = merge(CPUEindex,m2)
-  
-  write.csv(subset(CPUEindex,LFA==34&YEAR%in%2005:2018,c("LFA","YEAR","START_DATE","TEMP2","TEMP","mu","mu2")),file.path( figdir,"figures","Brad","CPUEmodelindex34.csv"),row.names=F)
-  write.csv(subset(CPUEindex,LFA==35&YEAR%in%2005:2018,c("LFA","YEAR","START_DATE","TEMP2","TEMP","mu","mu2")),file.path( figdir,"figures","Brad","CPUEmodelindex35.csv"),row.names=F)
-  write.csv(subset(CPUEindex,LFA==36&YEAR%in%2005:2018,c("LFA","YEAR","START_DATE","TEMP2","TEMP","mu","mu2")),file.path( figdir,"figures","Brad","CPUEmodelindex36.csv"),row.names=F)
-  write.csv(subset(CPUEindex,LFA==38&YEAR%in%2005:2018,c("LFA","YEAR","START_DATE","TEMP2","TEMP","mu","mu2")),file.path( figdir,"figures","Brad","CPUEmodelindex38.csv"),row.names=F)
-  
-  #pdf2png(file.path(figdir,"CPUEmodel1"))
-  cpueLFA.dat = CPUEplot(CPUE.data,lfa= p$lfas,yrs=1989:2018,graphic='png',export=T,path=figdir)
-  
-  cpue.annual=list()
-  for(i in 1:length(p$lfas)){
-    MU=c()
-    MU.sd=c()
-    for(j in 1:length(p$yrs)){
-      MU[j]=with(subset(cpue1,LFA==p$lfas[i]&YEAR==p$yrs[j]),weighted.mean(mu,WEIGHT_KG))
-      MU.sd[j]=with(subset(cpue1,LFA==p$lfas[i]&YEAR==p$yrs[j]),sqrt(sum(WEIGHT_KG/sum(WEIGHT_KG) * (mu - MU[j])^2)))
-    }
-    
-    #MU=with(subset(cpue1,LFA==p$lfas[i]),tapply(mu,YEAR,weighted.mean,WEIGHT_KG))
-    #MU.sd=with(subset(cpue1,LFA==p$lfas[i]),tapply(mu,YEAR,sd))
-    #xm <- weighted.mean(x, wt)y6723
-    #v <- sum(wt * (x - xm)^2)
-    cpue.annual[[i]] = data.frame(Area=p$lfas[i],Year=p$yrs,CPUE=MU,CPUE.ub=MU+MU.sd,CPUE.lb=MU-MU.sd)
-    
-    
-    #cpue.annual[[i]] = with(CPUEModelResults1[[i]]$pData,data.frame(Area=p$lfas[i],Year=YEAR,CPUE=mu,CPUE.ub=ub,CPUE.lb=lb))
-    
-    
-    
-  }
-  cpueModel = subset(do.call("rbind",cpue.annual),Year<2019)
-  
-  
-  #x11()
-  #pdf(file.path( figdir,"CPUEmodelAnnualIndex.pdf"),8, 10)
-  par(mfrow=c(length(p$lfas),1),mar=c(0,0,0,0),omi=c(0.5,1,0.5,0.5),las=1)
-  
-  for(i in 1:length(p$lfas)){
-    
-    
-    plot(mu~YEAR,CPUEModelResults1[[i]]$pData,type='b',pch=21,bg='red',ylim=c(0,7),xlim=c(1989,2018),xaxt='n')
-    points(CPUE~YEAR,subset(cpueLFA.dat$annual.dat,LFA==p$lfas[i]&YEAR<2019),pch=16,col='blue',cex=0.9)
-    #lines(ub~YEAR,CPUEModelResults1[[i]]$pData,lty=2)
-    #lines(lb~YEAR,CPUEModelResults1[[i]]$pData,lty=2)
-    axis(1,lab=F)
-    axis(4)
-    if(i==length(p$lfas))axis(1)
-    
-    text(1989,6,paste(p$lfas[i]),cex=2,pos=4)
-  }
-  mtext("CPUE (kg/TH)", 2, 3, outer = T, cex = 1,las=0)	
-  dev.off()
-  
-  cpueData2=    CPUEplot(CPUE.data,lfa= p$lfas,yrs=1981:2018,graphic='R')$annual.data
-  
-  save(list=c("cpueModel","cpueData2"),file=file.path(project.datadirectory("bio.lobster"),"outputs","cpueIndicators3438.rdata"))
-  save(cpueData2,file=file.path(project.datadirectory("bio.lobster"),"outputs","cpueIndicators3438_2.rdata"))
-  #write.csv(cpueLFA.dat$annual.data,"CPUEannualData.csv",row.names=F)
-  #write.csv(na.omit(cpueLFA.dat$daily.data),"CPUEdailyData.csv",row.names=F)
-  
-  load(file=file.path(project.datadirectory("bio.lobster"),"outputs","cpueIndicators3438.rdata"))
-  
-  # Landings and Effort ############
-  
-  land = lobster.db('seasonal.landings')
-  land$YEAR = as.numeric(substr(land$SYEAR,6,9))
-  
-  for(i in 1:length(p$lfas)){
-    
-    d1 = data.frame(YEAR = land$YEAR, LANDINGS = land[,paste0("LFA",p$lfas[i])])
-    d2 = subset(cpueData2,LFA==p$lfas[i])
-    
-    d2  = merge(data.frame(LFA=d2$LFA[1],YEAR=min(d2$YEAR):max(d2$YEAR)),d2,all.x=T)
-    
-    fishData = merge(d2,d1) 
-    fishData$EFFORT2 = fishData$LANDINGS * 1000 / fishData$CPUE
-    
-    # plot
-    x11(width=8,height=5)
-    FisheryPlot(fishData[,c("YEAR","LANDINGS","EFFORT2")],lfa = p$lfas[i],fd=figdir)
-  }
-  
-  
+#.....
 
 
-#Simple plotting of Ref Pts and HCR
+#Simple plotting of potential Ref Pts and HCR
+#Uses lobster IFMP approach of bmsy=long term median catch rate, ref points are 40 and 80% of BMSY
 
-bmsy=median(x4$cpue)
-plot(x4$year, x4$cpue, ylim=c(0,1.1*(max(x4$cpue))), type="l", xlab="Year", ylab="CPUE (kg)", main="4X")
-points(x4$year,x4$cpue, pch=16)
+bmsy=median(all$cpue)
+plot(all$year, all$cpue, ylim=c(0,1.1*(max(all$cpue))), type="l", xlab="Year", ylab="CPUE (kg)", main="4X")
+points(all$year,all$cpue, pch=16)
 abline(h=0.4*bmsy, col="red", lwd=3)
 abline(h=0.8*bmsy, col="yellow", lwd=3)
 abline(h=bmsy)
-text(x=min(as.numeric(x4$year))+1, y=1.1*median(x4$cpue), "BMSY")
+text(x=min(as.numeric(all$year))+1, y=1.1*median(all$cpue), "BMSY")

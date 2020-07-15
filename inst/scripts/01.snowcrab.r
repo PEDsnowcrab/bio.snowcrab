@@ -60,7 +60,7 @@ if (obtain.database.snapshot) {
     # few sanity checks on the initial data pulled from the raw tables
     problems = data.quality.check( type="stations", p=p)  # duplicates
     problems = data.quality.check( type="count.stations", p=p)
-    problems = data.quality.check( type="position", p=p) #MG try checking the end position of the tow, if there is an error
+    problems = data.quality.check( type="position", p=p) # try checking the end position of the tow, if there is an error
 
 # -------------------------------------------------------------------------------------
 # process the net configuration and the temperatures from seabird, netmind, etc ..
@@ -90,13 +90,12 @@ if (obtain.database.snapshot) {
 # -------------------------------------------------------------------------------------
 # merge in netmind, minilog, seabird, esonar data and do some sanity checks
 # Can add any datachecks that might improve overall data quality
-# BZ for 2017- If errors repeat and are not actually a problem, create an override
 
 snowcrab.db( DS="set.clean.redo", p=p ) #Updated stats data, need to redo to update stats columns
     #problems = data.quality.check( type="minilog.mismatches", p=p )
     problems = data.quality.check( type="position.difference", p=p)
     problems = data.quality.check( type="minilog.load", p=p)
-    problems = data.quality.check( type="minilog.dateproblems", p=p) #track down why ~all sets are giving mismatches
+    problems = data.quality.check( type="minilog.dateproblems", p=p) 
     problems = data.quality.check( type="minilog", p=p)   # Check for duplicate timestamps
     problems = data.quality.check( type="netmind.load", p=p)
     problems = data.quality.check( type="netmind.mismatches", p=p )

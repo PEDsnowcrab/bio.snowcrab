@@ -1,3 +1,16 @@
+#BZ- Work in progress June 2020
+#attempting to link catch rates to biomass estimates for N and SENS
+#a simple glm shows a link in N-ENS, not in S-ENS
+#began investigating potential for gridding catch data and then looking for a link between catch rates and biomass estimates
+#are the last n landings from all grids more closely tied to biomass (post localized depletion)?
+#are the first n landings from all grids more closely tied to biomass (pre localized depletiion)?
+#are the n grids with the highest landings more indicative of biomass than all grids, ...........
+
+#file "model comparisons.txt" in bio.data/assessments/2020/cpue.assessment/ 
+#is a basic summary of modeling cpue (quartiles) of various temporal periods by year by area
+
+#still needs further investigation / modelling  but much of the data wrangling is already done to allow that- BZ July 2020
+
 require(aegis)
 require(aegis.bathymetry) #if doing a full refresh of logbook data
 require(data.table)
