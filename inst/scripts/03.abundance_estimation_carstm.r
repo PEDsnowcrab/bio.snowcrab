@@ -2,8 +2,17 @@
 
 # Snow crab --- Areal unit modelling of habitat  -- no reliance upon stmv fields
 
+
+###------------------------------------------------
+#OS Compatability
+###------------------------------------------------
+
 #The use of the BYM2 model precludes using Windows, must be run in Linux 
 #Virtual box install of Ubuntu or Debian is likely easiest option
+#BZ- July 2020- There may be an option to allow Windows to run the CAR steps as found here:
+#http://brettklamer.com/diversions/statistical/faster-blas-in-r/
+#Not yet tested
+
 
 #Choose one- likely latter
 {
